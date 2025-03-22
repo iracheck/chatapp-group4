@@ -7,6 +7,7 @@ int main() {
     printf("Hello my name is: Kyle Jones\n");
     printf("Hello my name is: Ira Check\n");
     printf("Hello my name is: Jacob Quinn \n");
+    printf("Hello my name is: Amy Dwojewski\n");
 
     return 0;
 }
