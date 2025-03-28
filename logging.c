@@ -3,23 +3,24 @@
 #include <string.h>
 #include <time.h>
 
-char* get_datetime() {
+char* get_timestamp() {
     time_t now = time(NULL);
     struct tm *tm_info = localtime(&now);
     static char formatted_time[100];
 
-    strftime(formatted_time, sizeof(formatted_time), "%Y-%m-%d %H:%M:%S", tm_info);
-    // Had to switch to this because asctime() appends a newline, which messed up the log file.
+    // Formatting
+    strftime(formatted_time, sizeof(formatted_time), "%H:%M:%S", tm_info);
     return formatted_time;
 }
 
+// Send anything else to the log file
 void log(char *message, int flag) {
     char log_filename[] = "log.txt"; // Log file name
     char log_entry[256];
 
     FILE* log_file = fopen(log_filename, "a");
 
-    snprintf(log_entry, sizeof(log_entry), "[%s] %s\n", get_datetime(), message);
+    snprintf(log_entry, sizeof(log_entry), "[%s] %s\n", get_timestamp(), message);
     fputs(log_entry, log_file);
 
     if (flag == 1){
@@ -29,21 +30,45 @@ void log(char *message, int flag) {
     fclose(log_file);
 }
 
+// Log a connection, such as from a user, or from the perspective of a user, to the server.
+void log_connection(char *connection_info, int flag) {
+    char buffer[200];
+    snprintf(buffer, sizeof(buffer), "Connected: %s", connection_info);
+    log(buffer, flag);
+}
+
+// Log a disconnection in a similar fashion to
+void log_disconnection(char *connection_info, int flag) {
+    char buffer[200];
+    snprintf(buffer, sizeof(buffer), "Disconnected: %s", connection_info);
+    log(buffer, flag);
+}
+
+// Log an error
+void log_error(char *error_message, int flag) {
+    char buffer[200];
+    snprintf(buffer, sizeof(buffer), "Error: %s", error_message);
+    log(buffer, flag);
+}
+
+// Log a chat message
+void log_msg(char *user_info, char *message, int flag) {
+    char buffer[500];
+    snprintf(buffer, sizeof(buffer), "User '%s' sent '%s'", user_info, message);
+    log(buffer, flag);
+}
+
+// Clears the log file
 void clear_log() {
     char log_filename[] = "log.txt"; // Log file name
 
     FILE* log_file = fopen(log_filename, "w");
-    fclose(log_filename);
+    fclose(log_file);
 }
 
 int main(int argc, char *argv[]) {
-    clear_log();
-    log("Hello World!", 0);
-    log("Example 1", 1);
-    log("Example 2", 1);
-    log("Example 3", 1);
-    log("Example 4", 1);
-
-    log("Example 5", 1);
-
+    // log_connection("User1", 1);
+    // log_error("Test error", 1);
+    // log_msg("User1", "Hello World!", 1);
+    // log_disconnection("User1", 1);
 }
