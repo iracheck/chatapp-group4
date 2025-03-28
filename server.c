@@ -16,44 +16,12 @@
 #include <time.h>
 
 
-void get_timestamp(char *timestamp, size_t len){
-time_t now = time(NULL);
-struct tm *tm_info = localtime(&now);
-
-
-  strftime(timestamp, len, "%Y-%m-%d %H:%M:%S", tm_info);
-}
-
-
-void log_message(const char *filename, const char *message) {
-FILE *log_file = fopen(filename, "a"); // Open file in append mode
-if (log_file == NULL) {
-perror("Failed to open log file");
-exit(EXIT_FAILURE);
-}
-char timestamp[20]; // Buffer for the timestamp
-get_timestamp(timestamp, sizeof(timestamp)); // Get the current timestamp
-// Write the timestamp and message to the log file
-fprintf(log_file, "[%s] %s\n", timestamp, message);
-fclose(log_file); // Close the log file
-}
-
-void log(char *message, int flag) {
-
-
-  char log_filename[] = "logfile.txt"; // Log file name
-
-  log_message(log_filename, message);
-  if (flag == 1){
-    printf(message);
-  }
-}
-
 int main(int argc, char *argv[]) {
-  char* ip_address = "127.0.0.1";
-  int port = 8080;
-  int verbose = 0;
 
+  char* ip_address;
+  int port;
+  int verbose;
+  
   int serverSocket;
   int clientSocket;
   char message[1024];
@@ -61,22 +29,33 @@ int main(int argc, char *argv[]) {
   struct sockaddr_storage clientAddress;
   socklen_t clientAddressLength = sizeof(clientAddress);
   ssize_t bytes_read;
-  int result;;
+  int result;
+  
+  // arguments: <ip_address> <port> <verbose>
+  //ip_address: string, port: int, verbose: int (0 if disabled, 1 if enabled)
 
-  // Check for flags
-
-  for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
-      verbose = 1; // Set verbose flag to true
-
-      if (strcmp(argv[i], "") == 0 || strcmp(argv[i], "--verbose") == 0) {
-        verbose = 1; // Set verbose flag to true
-      }
-    }
-
+  if (argc <= 1) {// user provides no args
+    ip_address = "127.0.0.1";
+    port = 8080;
+    verbose = 1;
+  }
+  else if (argc == 2) {
+    ip_address = argv[1];
+    port = 8080;
+    verbose = 1;
+  }
+  else if (argc == 3) {
+    ip_address = argv[1];
+    port = atoi(argv[2]);
+    verbose = 1;
+  }
+  else if (argc == 4) {// user provides ip, port, and verbose
+    ip_address = argv[1];
+    port = atoi(argv[2]);
+    verbose = atoi(argv[3]);
   }
 
-
+  if (verbose == 1) {printf("Starting Server. IP: %s, Port: %d\n", ip_address, port);}
 
   //Socket creation
   serverSocket = socket (AF_INET, SOCK_STREAM, 0);
@@ -85,6 +64,8 @@ int main(int argc, char *argv[]) {
     perror("Failed to create socket");
     exit(EXIT_FAILURE);
   }
+
+  if (verbose == 1) {printf("Server socket created\n");}
 
   memset(&serverAddress, 0, sizeof(serverAddress));
   serverAddress.sin_family = AF_INET;
@@ -97,6 +78,8 @@ int main(int argc, char *argv[]) {
     close(serverSocket);
     exit(EXIT_FAILURE);
   }
+  
+  if (verbose == 1) {printf("Server socket binded\n");}
 
   result = listen(serverSocket, 5);
   if (result == -1) {
@@ -104,6 +87,8 @@ int main(int argc, char *argv[]) {
     close(serverSocket);
     exit(EXIT_FAILURE);
   }
+
+  if (verbose == 1) {printf("Server socket waiting for client connections...\n");}
 
   //Client socket
   clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddress, &clientAddressLength);
@@ -113,11 +98,13 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
+  if (verbose == 1) {printf("Ready for reading clients");}
+
   while ((bytes_read = recv(clientSocket, message, sizeof(message)-1, 0)) > 0) {
     message[bytes_read] = '\0';
     printf("Received Data: %s\n", message);
   }
-
+  printf("Exiting Server\n");
   close(clientSocket);
   close(serverSocket);
 
