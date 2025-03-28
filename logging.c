@@ -37,7 +37,7 @@ void log_connection(char *connection_info, int flag) {
     log(buffer, flag);
 }
 
-// Log a disconnection in a similar fashion to
+// Log a disconnection
 void log_disconnection(char *connection_info, int flag) {
     char buffer[200];
     snprintf(buffer, sizeof(buffer), "Disconnected: %s", connection_info);
