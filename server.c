@@ -1,4 +1,4 @@
-/*
+ /*
     Kyle Jones
     Amy Dwojewski
     Franklin Collazo
@@ -14,6 +14,11 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <poll.h>
+#include <stdbool.h>
+
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
 
 
 int main(int argc, char *argv[]) {
@@ -22,17 +27,15 @@ int main(int argc, char *argv[]) {
   int port;
   int verbose;
   
-  int serverSocket;
-  int clientSocket;
-  char message[1024];
-  struct sockaddr_in serverAddress;
-  struct sockaddr_storage clientAddress;
-  socklen_t clientAddressLength = sizeof(clientAddress);
-  ssize_t bytes_read;
-  int result;
-  
+  int server_fd, new_socket, valread;
+  struct sockaddr_in address;
+  int addrlen = sizeof(address);
+  struct pollfd fds[MAX_CLIENTS + 1];
+  char buffer[BUFFER_SIZE];
+
   // arguments: <ip_address> <port> <verbose>
   //ip_address: string, port: int, verbose: int (0 if disabled, 1 if enabled)
+
 
   if (argc <= 1) {// user provides no args
     ip_address = "127.0.0.1";
@@ -58,55 +61,84 @@ int main(int argc, char *argv[]) {
   if (verbose == 1) {printf("Starting Server. IP: %s, Port: %d\n", ip_address, port);}
 
   //Socket creation
-  serverSocket = socket (AF_INET, SOCK_STREAM, 0);
-
-  if (serverSocket == -1) {
-    perror("Failed to create socket");
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+    perror("socket failed");
     exit(EXIT_FAILURE);
   }
-
   if (verbose == 1) {printf("Server socket created\n");}
 
-  memset(&serverAddress, 0, sizeof(serverAddress));
-  serverAddress.sin_family = AF_INET;
-  serverAddress.sin_addr.s_addr = inet_addr(ip_address);
-  serverAddress.sin_port = htons(port);
 
-  result = bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
-  if (result == -1) {
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+
+   if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
     perror("Failed to bind");
-    close(serverSocket);
     exit(EXIT_FAILURE);
   }
   
   if (verbose == 1) {printf("Server socket binded\n");}
 
-  result = listen(serverSocket, 5);
-  if (result == -1) {
+
+  if (listen(server_fd, 5) < 0) {
     perror("Failed to listen");
-    close(serverSocket);
     exit(EXIT_FAILURE);
   }
 
   if (verbose == 1) {printf("Server socket waiting for client connections...\n");}
 
-  //Client socket
-  clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddress, &clientAddressLength);
-  if (clientSocket == -1) {
-    perror("Failed to accept connection");
-    close(serverSocket);
-    exit(EXIT_FAILURE);
+  printf("Server is listening on port %d...\n", port);
+      
+  while(true){
+  //clear socket set
+    int activity = poll(fds, MAX_CLIENTS + 1, -1);
+    
+      if(activity < 0){
+      perror("poll error");
+      continue;
+      }
+
+    if(fds[0].revents & POLLIN){
+      if((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0){
+      perror("accept");
+        continue;
+      }
+
+    printf("new connection, socket fd: %d \n", new_socket);
+    
+
+    for(int i = 1; 1 <= MAX_CLIENTS; i++){
+      if (fds[i].fd == -1) {
+          fds[i].fd = new_socket;
+          fds[i].events = POLLIN;
+          break;
+        }
+      }
+    }
+
+
+    for(int i = 1; i <= MAX_CLIENTS; i++){
+      if(fds[i].fd != -1 && (fds[i].revents & POLLIN)){
+        memset(buffer, 0, BUFFER_SIZE);
+        valread = read(fds[i].fd, buffer, BUFFER_SIZE);
+
+        if(valread <= 0){
+          printf("Client disconnected, socket fd: %d\n", fds[i].fd);
+          close(fds[i].fd);
+          fds[i].fd = -1;
+        } else {
+            printf("Received: %s", buffer);
+            send(fds[i].fd, buffer, valread, 0);
+        }
+      }
+    }
+  
+
+    
   }
 
-  if (verbose == 1) {printf("Ready for reading clients");}
 
-  while ((bytes_read = recv(clientSocket, message, sizeof(message)-1, 0)) > 0) {
-    message[bytes_read] = '\0';
-    printf("Received Data: %s\n", message);
-  }
   printf("Exiting Server\n");
-  close(clientSocket);
-  close(serverSocket);
-
+ 
   return 0;
 }
