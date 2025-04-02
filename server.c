@@ -1,4 +1,4 @@
-/*
+ /*
     Kyle Jones
     Amy Dwojewski
     Franklin Collazo
@@ -14,99 +14,131 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <poll.h>
+#include <stdbool.h>
 
-void get_timestamp(char *timestamp, size_t len) {
-    time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
-    strftime(timestamp, len, "%Y-%m-%d %H:%M:%S", tm_info);  // Formats timestamp as "YYYY-MM-DD HH:MM:SS"
-}
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+
 
 int main(int argc, char *argv[]) {
-    char* ip_address = "127.0.0.1";
-    int port = 8080;
-    int verbose = 0;
+
+  char* ip_address;
+  int port;
+  int verbose;
   
-    int serverSocket;
-    int clientSocket;
-    char message[1024];
-    struct sockaddr_in serverAddress;
-    struct sockaddr_storage clientAddress;
-    socklen_t clientAddressLength = sizeof(clientAddress);
-    ssize_t bytes_read;
-    int result;
+  int server_fd, new_socket, valread;
+  struct sockaddr_in address;
+  int addrlen = sizeof(address);
+  struct pollfd fds[MAX_CLIENTS + 1];
+  char buffer[BUFFER_SIZE];
+
+  // arguments: <ip_address> <port> <verbose>
+  //ip_address: string, port: int, verbose: int (0 if disabled, 1 if enabled)
+
+
+  if (argc <= 1) {// user provides no args
+    ip_address = "127.0.0.1";
+    port = 8080;
+    verbose = 1;
+  }
+  else if (argc == 2) {
+    ip_address = argv[1];
+    port = 8080;
+    verbose = 1;
+  }
+  else if (argc == 3) {
+    ip_address = argv[1];
+    port = atoi(argv[2]);
+    verbose = 1;
+  }
+  else if (argc == 4) {// user provides ip, port, and verbose
+    ip_address = argv[1];
+    port = atoi(argv[2]);
+    verbose = atoi(argv[3]);
+  }
+
+  if (verbose == 1) {printf("Starting Server. IP: %s, Port: %d\n", ip_address, port);}
+
+  //Socket creation
+  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+    perror("socket failed");
+    exit(EXIT_FAILURE);
+  }
+  if (verbose == 1) {printf("Server socket created\n");}
+
+
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(port);
+
+   if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    perror("Failed to bind");
+    exit(EXIT_FAILURE);
+  }
   
-    // Check for flags
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
-            verbose = 1;  // Set verbose flag to true
+  if (verbose == 1) {printf("Server socket binded\n");}
+
+
+  if (listen(server_fd, 5) < 0) {
+    perror("Failed to listen");
+    exit(EXIT_FAILURE);
+  }
+
+  if (verbose == 1) {printf("Server socket waiting for client connections...\n");}
+
+  printf("Server is listening on port %d...\n", port);
+      
+  while(true){
+  //clear socket set
+    int activity = poll(fds, MAX_CLIENTS + 1, -1);
+    
+      if(activity < 0){
+      perror("poll error");
+      continue;
+      }
+
+    if(fds[0].revents & POLLIN){
+      if((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0){
+      perror("accept");
+        continue;
+      }
+
+    printf("new connection, socket fd: %d \n", new_socket);
+    
+
+    for(int i = 1; 1 <= MAX_CLIENTS; i++){
+      if (fds[i].fd == -1) {
+          fds[i].fd = new_socket;
+          fds[i].events = POLLIN;
+          break;
         }
+      }
     }
 
-    // Display starting info if verbose mode is enabled
-    if (verbose == 1) {
-        printf("Starting Server. IP: %s, Port: %d\n", ip_address, port);
+
+    for(int i = 1; i <= MAX_CLIENTS; i++){
+      if(fds[i].fd != -1 && (fds[i].revents & POLLIN)){
+        memset(buffer, 0, BUFFER_SIZE);
+        valread = read(fds[i].fd, buffer, BUFFER_SIZE);
+
+        if(valread <= 0){
+          printf("Client disconnected, socket fd: %d\n", fds[i].fd);
+          close(fds[i].fd);
+          fds[i].fd = -1;
+        } else {
+            printf("Received: %s", buffer);
+            send(fds[i].fd, buffer, valread, 0);
+        }
+      }
     }
+  
 
-    // Socket creation
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1) {
-        perror("Failed to create socket");
-        exit(EXIT_FAILURE);
-    }
+    
+  }
 
-    if (verbose == 1) {
-        printf("Server socket created\n");
-    }
 
-    memset(&serverAddress, 0, sizeof(serverAddress));
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = inet_addr(ip_address);
-    serverAddress.sin_port = htons(port);
-
-    result = bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress));
-    if (result == -1) {
-        perror("Failed to bind");
-        close(serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (verbose == 1) {
-        printf("Server socket binded\n");
-    }
-
-    result = listen(serverSocket, 5);
-    if (result == -1) {
-        perror("Failed to listen");
-        close(serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (verbose == 1) {
-        printf("Server socket waiting for client connections...\n");
-    }
-
-    // Client socket
-    clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddress, &clientAddressLength);
-    if (clientSocket == -1) {
-        perror("Failed to accept connection");
-        close(serverSocket);
-        exit(EXIT_FAILURE);
-    }
-
-    if (verbose == 1) {
-        printf("Ready for reading clients\n");
-    }
-
-    while ((bytes_read = recv(clientSocket, message, sizeof(message) - 1, 0)) > 0) {
-        message[bytes_read] = '\0';
-        printf("Received Data: %s\n", message);
-    }
-
-    // Closing sockets
-    close(clientSocket);
-    close(serverSocket);
-
-    printf("Exiting Server\n");
-
-    return 0;
+  printf("Exiting Server\n");
+ 
+  return 0;
 }
