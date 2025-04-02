@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
 
+// Gets the current time in HH:MM:SS format
 char* get_timestamp() {
     time_t now = time(NULL);
     struct tm *tm_info = localtime(&now);
@@ -13,10 +15,11 @@ char* get_timestamp() {
     return formatted_time;
 }
 
-// Send anything else to the log file
-void send_log(char *message, int flag) {
+// Write a message to the log file, including the time that it occurred.
+// Do not include newline.
+void write_log(char *message, int flag) {
     char log_filename[] = "log.txt"; // Log file name
-    char log_entry[256];
+    char log_entry[10000];
 
     FILE* log_file = fopen(log_filename, "a");
 
@@ -30,32 +33,47 @@ void send_log(char *message, int flag) {
     fclose(log_file);
 }
 
+// Unlike other logging methods, flag must be included first. Allows you to write a log file like a formatted string.
+// Do not include newline.
+void write_logf(int flag, const char *string, ...) {
+    char buffer[10009];
+
+    va_list args;
+    va_start(args, string);
+    vsnprintf(buffer, sizeof(buffer), string, args);
+    va_end(args);
+
+    write_log(buffer, flag);
+}
+
 // Log a connection, such as from a user, or from the perspective of a user, to the server.
+// Do not include newline.
 void log_connection(char *connection_info, int flag) {
-    char buffer[200];
+    char buffer[1000];
     snprintf(buffer, sizeof(buffer), "Connected: %s", connection_info);
-    send_log(buffer, flag);
+    write_log(buffer, flag);
 }
 
-// Log a disconnection
+// Log a disconnection, such as from a user, or from the perspective of a user, to the server.
+// Do not include newline.
 void log_disconnection(char *connection_info, int flag) {
-    char buffer[200];
+    char buffer[1000];
     snprintf(buffer, sizeof(buffer), "Disconnected: %s", connection_info);
-    log(buffer, flag);
+    write_log(buffer, flag);
 }
 
-// Log an error
+// Log an error. Do not include newline.
 void log_error(char *error_message, int flag) {
-    char buffer[200];
+    char buffer[1000];
     snprintf(buffer, sizeof(buffer), "Error: %s", error_message);
-    log(buffer, flag);
+    write_log(buffer, flag);
 }
 
-// Log a chat message
-void log_msg(char *user_info, char *message, int flag) {
-    char buffer[500];
-    snprintf(buffer, sizeof(buffer), "User '%s' sent '%s'", user_info, message);
-    log(buffer, flag);
+// Log a chat message. Do not include newline.
+void log_msg(char *user_name, char *message, int flag) {
+    char buffer[10000];
+    snprintf(buffer, sizeof(buffer), "User '%s' sent '%s'", user_name, message);
+    write_log(buffer, flag);
 }
 
 // Clears the log file
@@ -64,11 +82,4 @@ void clear_log() {
 
     FILE* log_file = fopen(log_filename, "w");
     fclose(log_file);
-}
-
-int main(int argc, char *argv[]) {
-    // log_connection("User1", 1);
-    // log_error("Test error", 1);
-    // log_msg("User1", "Hello World!", 1);
-    // log_disconnection("User1", 1);
 }
