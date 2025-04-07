@@ -3,20 +3,7 @@
 #include <sys/wait.h>
 #include <pthread.h>
 
-#include "logging.c"  // Assuming logging.h contains write_log declaration
-
-// Ignore this for now :) Just for testing
-int get_rand_num_online() {
-  int random = rand() / 100000000;
-  int num_online = random - 5;
-  if (num_online < 0) {
-    num_online = 0;
-  }
-
-  printf("Online: %d\n", num_online);
-  return num_online;
-}
-
+#include "logging.c"
 
 static void trigger_shutdown(int serverSocket, int verbose) {
   write_log("Server shutting down...", verbose);
