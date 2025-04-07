@@ -3,4 +3,4 @@
 - Implement logging fuctionallity into Server.c. *Franklin*
 - Get clients to see other clients messages. *Jacob*
 - work on GUI. *Kyle and Amy*
-- 
+- work on server shutown *Ira*
