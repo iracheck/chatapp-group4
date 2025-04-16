@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 
 
     for(int i = 1; i <= MAX_CLIENTS; i++){
-      if(fds[i].fd != -1 && (fds[i].revents & POLLIN)){
+      if(fds[i].fd != -1 && fds[i].revents && POLLIN){
         memset(buffer, 0, BUFFER_SIZE);
         valread = read(fds[i].fd, buffer, BUFFER_SIZE);
 
@@ -142,7 +142,7 @@ int main(int argc, char *argv[]) {
         } else {
             printf("Received: %s", buffer);
             for (int j = 1; j <= MAX_CLIENTS; j++) {
-              if (fds[j].fd == -1 && j != i) {
+              if (fds[j].fd != -1 && j != i) {
                 send(fds[j].fd, buffer, valread, 0);
               }
             }
