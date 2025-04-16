@@ -33,6 +33,14 @@ int main(int argc, char *argv[]) {
   struct pollfd fds[MAX_CLIENTS + 1];
   char buffer[BUFFER_SIZE];
 
+
+
+  // initialize sockets
+  for (int i = 1; i <= MAX_CLIENTS; i++) {
+    fds[i].fd = -1;
+  }
+
+
   // arguments: <ip_address> <port> <verbose>
   //ip_address: string, port: int, verbose: int (0 if disabled, 1 if enabled)
 
@@ -88,10 +96,15 @@ int main(int argc, char *argv[]) {
   if (verbose == 1) {printf("Server socket waiting for client connections...\n");}
 
   printf("Server is listening on port %d...\n", port);
-      
+
+
+  fds[0].fd = server_fd;
+  fds[0].events = POLLIN;
+
   while(true){
   //clear socket set
     int activity = poll(fds, MAX_CLIENTS + 1, -1);
+
     
       if(activity < 0){
       perror("poll error");
@@ -107,7 +120,7 @@ int main(int argc, char *argv[]) {
     printf("new connection, socket fd: %d \n", new_socket);
     
 
-    for(int i = 1; 1 <= MAX_CLIENTS; i++){
+    for(int i = 1; i <= MAX_CLIENTS; i++){
       if (fds[i].fd == -1) {
           fds[i].fd = new_socket;
           fds[i].events = POLLIN;
@@ -128,7 +141,11 @@ int main(int argc, char *argv[]) {
           fds[i].fd = -1;
         } else {
             printf("Received: %s", buffer);
-            send(fds[i].fd, buffer, valread, 0);
+            for (int j = 1; j <= MAX_CLIENTS; j++) {
+              if (fds[j].fd == -1 && j != i) {
+                send(fds[j].fd, buffer, valread, 0);
+              }
+            }
         }
       }
     }
