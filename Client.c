@@ -99,6 +99,7 @@ int main() {
                 printf("message from server: %s", buffer);
             } else if (bytes_received == 0) {
                 printf("connection closed");
+                break;
             } else {
                 perror("recv failed");
                 break;
