@@ -105,6 +105,7 @@ int main() {
                 break;
             }
         }
+    }
 
     // Close the socket
     close(client_fd);
