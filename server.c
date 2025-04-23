@@ -16,6 +16,7 @@
 #include <time.h>
 #include <poll.h>
 #include <stdbool.h>
+#include "logging.c"
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
@@ -26,7 +27,8 @@ int main(int argc, char *argv[]) {
   char* ip_address;
   int port;
   int verbose;
-  
+  char* log_msg;
+
   int server_fd, new_socket, valread;
   struct sockaddr_in address;
   int addrlen = sizeof(address);
@@ -86,7 +88,7 @@ int main(int argc, char *argv[]) {
   }
   
   if (verbose == 1) {printf("Server socket binded\n");}
-
+  write_logf(verbose, "Server connected and binded.");
 
   if (listen(server_fd, 5) < 0) {
     perror("Failed to listen");
@@ -95,16 +97,14 @@ int main(int argc, char *argv[]) {
 
   if (verbose == 1) {printf("Server socket waiting for client connections...\n");}
 
-  printf("Server is listening on port %d...\n", port);
-
-
   fds[0].fd = server_fd;
   fds[0].events = POLLIN;
+
+  write_logf(verbose, "Server started and listening on port %d...", port);
 
   while(true){
   //clear socket set
     int activity = poll(fds, MAX_CLIENTS + 1, -1);
-
     
       if(activity < 0){
       perror("poll error");
@@ -117,8 +117,7 @@ int main(int argc, char *argv[]) {
         continue;
       }
 
-    printf("new connection, socket fd: %d \n", new_socket);
-    
+    log_connection("New Client connected.", verbose);
 
     for(int i = 1; i <= MAX_CLIENTS; i++){
       if (fds[i].fd == -1) {
@@ -136,11 +135,11 @@ int main(int argc, char *argv[]) {
         valread = read(fds[i].fd, buffer, BUFFER_SIZE);
 
         if(valread <= 0){
-          printf("Client disconnected, socket fd: %d\n", fds[i].fd);
+          log_disconnection("Client disconnected.", verbose);
           close(fds[i].fd);
           fds[i].fd = -1;
         } else {
-            printf("Received: %s", buffer);
+            write_log(buffer, verbose);
             for (int j = 1; j <= MAX_CLIENTS; j++) {
               if (fds[j].fd != -1 && j != i) {
                 send(fds[j].fd, buffer, valread, 0);
@@ -155,7 +154,6 @@ int main(int argc, char *argv[]) {
   }
 
 
-  printf("Exiting Server\n");
- 
+  write_logf(verbose, "Server stopped.");
   return 0;
 }

@@ -105,7 +105,7 @@ int main() {
                 break;
             }
         }
-    }
+
     // Close the socket
     close(client_fd);
     printf("Disconnected from the server\n");
