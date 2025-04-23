@@ -1,4 +1,4 @@
-package org.example.chatroom;
+package com.example.t_1;
 
 import javafx.application.Application;
 
