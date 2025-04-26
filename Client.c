@@ -99,14 +99,17 @@ int main() {
                 printf("message from server: %s", buffer);
             } else if (bytes_received == 0) {
                 printf("connection closed");
+                break;
             } else {
                 perror("recv failed");
                 break;
             }
         }
     }
+
     // Close the socket
     close(client_fd);
     printf("Disconnected from the server\n");
     return 0;
+
 }
