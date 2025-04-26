@@ -25,21 +25,21 @@
 volatile bool online = true;
 int users_online;
 
-void register_connection() {
+void register_connection() { //Increments the current amount of users by 1
     users_online += 1;
 }
 
-void register_disconnection() {
+void register_disconnection() { //Decrements the current amount of users by 1
     users_online -= 1;
 }
 
-void trigger_shutdown(int serverSocket, int verbose) {
+void trigger_shutdown(int serverSocket, int verbose) { //Closes server socket
     write_log("Server shutting down...", verbose);
     online = false;
     close(serverSocket);
 }
 
-void * shutdown_thread(void *arg, int serverSocket, int verbose) {
+void * shutdown_thread(void *arg, int serverSocket, int verbose) {// Monitors server activty and triggers graceful shutdown when there are no users connected
     int TIME_UNTIL_SHUTDOWN = 10; // in seconds
     int TIME_BETWEEN_CHECKS = 1;   // seconds
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     int server_fd, new_socket, valread;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
-    struct pollfd fds[MAX_CLIENTS + 1];
+    struct pollfd fds[MAX_CLIENTS + 1]; //struct that stores clients
     char buffer[BUFFER_SIZE];
 
     if (argc <= 1) {
@@ -117,11 +117,9 @@ int main(int argc, char *argv[]) {
         verbose = atoi(argv[3]);
     }
 
-    if (verbose == 1) {
-        printf("Starting Server. IP: %s, Port: %d\n", ip_address, port);
-    }
+    write_logf(verbose, "Starting Server");
 
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) { //Create server socket
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
@@ -133,7 +131,7 @@ int main(int argc, char *argv[]) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) { //Bind server socket
         perror("Failed to bind");
         exit(EXIT_FAILURE);
     }
@@ -143,7 +141,7 @@ int main(int argc, char *argv[]) {
     }
     write_logf(verbose, "Server connected and binded.");
 
-    if (listen(server_fd, 5) < 0) {
+    if (listen(server_fd, 5) < 0) { //Listen for client connections
         perror("Failed to listen");
         exit(EXIT_FAILURE);
     }
@@ -155,25 +153,18 @@ int main(int argc, char *argv[]) {
     write_logf(verbose, "Server started and listening on port %d...", port);
     start_shutdown_handler(server_fd, verbose);
 
-    fds[0].fd = server_fd;
+    fds[0].fd = server_fd; //Assign the first slot in the client storer for the server socket
     fds[0].events = POLLIN;
 
-    for (int i = 1; i <= MAX_CLIENTS; i++) {
+    for (int i = 1; i <= MAX_CLIENTS; i++) { //Initialize each slot in the client storer to -1, where -1 means the slot is available
         fds[i].fd = -1;
     }
 
     while (online) {
 
-        poll(fds, MAX_CLIENTS + 1, 1000);
+        poll(fds, MAX_CLIENTS + 1, 1000); // Monitor client storer for activity, such as incoming data
 
-        // if (activity < 0) {
-        //     perror("poll error");
-        //     continue;
-        // }
-
-
-
-        if (fds[0].revents & POLLIN) {
+        if (fds[0].revents & POLLIN) {// Incoming client connection
             if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
                 perror("accept");
                 continue;
@@ -181,7 +172,7 @@ int main(int argc, char *argv[]) {
 
             log_connection("New Client connected.", 1);
 
-            for (int i = 1; i <= MAX_CLIENTS; i++) {
+            for (int i = 1; i <= MAX_CLIENTS; i++) { //Assign client to client storer
                 if (fds[i].fd == -1) {
                     fds[i].fd = new_socket;
                     fds[i].events = POLLIN;
@@ -192,7 +183,7 @@ int main(int argc, char *argv[]) {
         }
 
         for (int i = 1; i <= MAX_CLIENTS; i++) {
-            if (fds[i].fd != -1 && fds[i].revents && POLLIN) {
+            if (fds[i].fd != -1 && fds[i].revents && POLLIN) { //Incoming data from a client
                 memset(buffer, 0, BUFFER_SIZE);
                 valread = read(fds[i].fd, buffer, BUFFER_SIZE);
 
@@ -204,7 +195,7 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     write_log(buffer, verbose);
-		    for (int j = 1; j <= MAX_CLIENTS; j++) {
+		    for (int j = 1; j <= MAX_CLIENTS; j++) { // Send incoming data to each client
                       if (fds[j].fd != -1) {
                         send(fds[j].fd, buffer, valread, 0);
                       }
@@ -215,6 +206,6 @@ int main(int argc, char *argv[]) {
     }
     
     close(fds[0].fd);
-    write_logf(verbose, "Server stopped.");
+    write_logf(verbose, "Server shutdown.");
     return 0;
 }
