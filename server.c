@@ -155,11 +155,15 @@ int main(int argc, char *argv[]) {
     write_logf(verbose, "Server started and listening on port %d...", port);
     start_shutdown_handler(server_fd, verbose);
 
-    for (int i = 0; i <= MAX_CLIENTS; i++) {
+    fds[0].fd = server_fd;
+    fds[0].events = POLLIN;
+
+    for (int i = 1; i <= MAX_CLIENTS; i++) {
         fds[i].fd = -1;
     }
 
     while (online) {
+
         poll(fds, MAX_CLIENTS + 1, 1000);
 
         // if (activity < 0) {
@@ -167,8 +171,7 @@ int main(int argc, char *argv[]) {
         //     continue;
         // }
 
-        fds[0].fd = server_fd;
-        fds[0].events = POLLIN;
+
 
         if (fds[0].revents & POLLIN) {
             if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
@@ -181,7 +184,6 @@ int main(int argc, char *argv[]) {
             for (int i = 1; i <= MAX_CLIENTS; i++) {
                 if (fds[i].fd == -1) {
                     fds[i].fd = new_socket;
-                    printf("%d\n", new_socket);
                     fds[i].events = POLLIN;
                     register_connection();
                     break;
@@ -190,11 +192,9 @@ int main(int argc, char *argv[]) {
         }
 
         for (int i = 1; i <= MAX_CLIENTS; i++) {
-            if (fds[i].fd != -1 && fds[i].revents & POLLIN) {
+            if (fds[i].fd != -1 && fds[i].revents && POLLIN) {
                 memset(buffer, 0, BUFFER_SIZE);
                 valread = read(fds[i].fd, buffer, BUFFER_SIZE);
-
-                printf("%d\n", valread);
 
                 if (valread <= 0) {
                     log_disconnection("Client disconnected.", 1);
@@ -204,12 +204,17 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     write_log(buffer, verbose);
-                    send(fds[i].fd, buffer, valread, 0);
+		    for (int j = 1; j <= MAX_CLIENTS; j++) {
+                      if (fds[j].fd != -1) {
+                        send(fds[j].fd, buffer, valread, 0);
+                      }
+                    }
                 }
             }
         }
     }
-
+    
+    close(fds[0].fd);
     write_logf(verbose, "Server stopped.");
     return 0;
 }

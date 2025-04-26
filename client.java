@@ -6,15 +6,17 @@ public class client {
 
     private static String SERVER_ADDRESS = null;
     private static int SERVER_PORT = -1;
+    private static String USER_NAME = "Guest";
    
     public static void main(String[] args) {
         
         if (args.length < 2 || args.length >= 3) {
           SERVER_ADDRESS = "127.0.0.1";
-          SERVER_PORT = 8080;     
+          SERVER_PORT = 8080;
         }else {
           SERVER_ADDRESS = args[0];
           SERVER_PORT = Integer.parseInt(args[1]);
+          USER_NAME = args[2];
         }
         // Loop until the client successfully connects to the server
         while (true) {
@@ -47,7 +49,7 @@ public class client {
                     }
 
                     // Send the message to the server
-                    output.println(message);
+                    output.println(USER_NAME + ": " + message);
                 }
 
                 // Close the socket and streams
