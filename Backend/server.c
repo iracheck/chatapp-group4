@@ -196,6 +196,7 @@ int main(int argc, char *argv[]) {
 
 
 
+        // Accept new clients
         if (fds[0].revents & POLLIN) {
             if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0) {
                 perror("accept");
@@ -214,11 +215,13 @@ int main(int argc, char *argv[]) {
             }
         }
 
+        // Handle when a client disconnects from the server
         for (int i = 1; i <= MAX_CLIENTS; i++) {
             if (fds[i].fd != -1 && fds[i].revents && POLLIN) {
                 memset(buffer, 0, BUFFER_SIZE);
                 valread = read(fds[i].fd, buffer, BUFFER_SIZE);
 
+                // If the client is no longer connected, ensure that the socket is closed and that the shutdown handler knows that fact
                 if (valread <= 0) {
                     log_disconnection("Client disconnected.", verbose);
                     register_disconnection();
@@ -236,8 +239,8 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
-    close(fds[0].fd);
-    write_logf(verbose, "Server shutdown.");
+
+    // double checks that the socket is properly closed
+    trigger_shutdown(server_fd);
     return 0;
 }
