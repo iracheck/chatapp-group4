@@ -8,6 +8,13 @@ public class client {
     private static int SERVER_PORT = -1;
     private static String USER_NAME = "Guest";
    
+    public static void send_to_server(PrintWriter server_writer, String message, String username) {//Sends client message to server
+    
+      if (message.length() > 0) {
+        server_writer.println(username + ": " + message);
+      }
+    }
+
     public static void main(String[] args) {
         
         if (args.length < 2 || args.length >= 3) {
@@ -49,7 +56,7 @@ public class client {
                     }
 
                     // Send the message to the server
-                    output.println(USER_NAME + ": " + message);
+                    send_to_server(output, message, USER_NAME);
                 }
 
                 // Close the socket and streams
