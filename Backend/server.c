@@ -18,6 +18,7 @@
 #include <signal.h>
 
 #include "logging.c"
+#include "get_ip.c"
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
     char buffer[BUFFER_SIZE];
 
     if (argc <= 1) {
-        ip_address = "127.0.0.1";
+        ip_address = get_ip_address();
         port = 8080;
         verbose = 1;
     }
@@ -136,7 +137,7 @@ int main(int argc, char *argv[]) {
     }
 
     write_logf(verbose, "Starting Server");
-
+    printf("%s\n", ip_address);
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) { //Create server socket
         perror("socket failed");
         exit(EXIT_FAILURE);
