@@ -1,4 +1,4 @@
-
+package com.example.client_gui;
 
 import javafx.application.Application;
 
@@ -190,6 +190,7 @@ public class GUI extends Application implements Runnable {
                 // log message
                 sendBox.clear();
             }
+
         });
 
         // horizontal box to store the field for the message and send button
@@ -234,12 +235,13 @@ public class GUI extends Application implements Runnable {
     protected void updateGUIText() {
         try {
             //System.out.println(2);
+            if (userTextField.getText() != null) {
+                chatBox.appendText(userTextField.getText() + ": " + data.inMessages + "\n");
+                System.out.println(userTextField.getText() + ": " + data.inMessages + "\n");
 
-            chatBox.appendText(userTextField.getText() + ": " + data.inMessages + "\n");
-            System.out.println(userTextField.getText() + ": " + data.inMessages + "\n");
-
-            // remove the value from inMessages
-            data.inMessages = null;
+                // remove the value from inMessages
+                data.inMessages = null;
+            }
         } catch (Exception e) {
             //e.printStackTrace();
         }
