@@ -1,4 +1,4 @@
-package com.example.client_gui;
+
 
 public class data {
     static volatile String[] CLIENT_INFO = new String[]{"-1", "-1", "-1"};
