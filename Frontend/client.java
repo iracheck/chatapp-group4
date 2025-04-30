@@ -1,4 +1,4 @@
-
+package com.example.client_gui;
 
 import java.io.*;
 import java.net.*;
@@ -84,21 +84,31 @@ public class client {
                 Thread receiveThread = new Thread(new ReceiveMessages(input));
                 receiveThread.start();
 
-                // Send messages to the server
-                String message;
+                //
+                GUI GUIHandler = new GUI();
+                data.inMessages = input.readLine();
+                System.out.println(data.inMessages);
+
                 while (true) {
                     // Read input from the user
-                    message = data.outMessages;
+                    if (data.outMessages != null) {
 
-                    // Exit the com.example.client_gui.client if the user types "exit"
-                    if ("exit".equalsIgnoreCase(message)) {
-                        break;
+                        // Exit the com.example.client_gui.client if the user types "exit"
+                        if ("exit".equalsIgnoreCase(data.outMessages)) {
+                            break;
+                        }
+
+                        // Send the message to the server
+                        send_to_server(output);
+                        data.outMessages = null;
+                        //output.println(USER_NAME + ": " + message);
                     }
+                    if (data.inMessages != null) {
+                        // Append data into GUI textbox
+                        GUIHandler.updateGUIText();
 
-                    // Send the message to the server
-                    send_to_server(output);
-
-                    output.println(USER_NAME + ": " + message);
+                        System.out.println("\nServer: " + data.inMessages);
+                    }
                 }
 
                 // Close the socket and streams
@@ -107,6 +117,7 @@ public class client {
                 break;  // Break out of the loop if connection is successful and com.example.client_gui.client exits
 
             } catch (IOException e) {
+                e.printStackTrace();
                 System.out.println("Failed to connect to the server. Retrying in 10 seconds...");
                 try {
                     Thread.sleep(10000);  // Wait for 10 seconds before retrying
@@ -136,18 +147,18 @@ public class client {
         @Override
         public void run() {
             try {
-                // create a new GUI object
-                GUI GUIHandler = new GUI();
-                String serverMessage;
-                while ((serverMessage = input.readLine()) != null) {
-                    // update data file
-                    data.inMessages = serverMessage;
-
-                    // Append data into GUI textbox
-                    GUIHandler.updateGUIText();
-
-                    //System.out.println("\nServer: " + serverMessage);
-                }
+//                // create a new GUI object
+//                GUI GUIHandler = new GUI();
+//                String serverMessage;
+//                while ((serverMessage = input.readLine()) != null) {
+//                    // update data file
+//                    data.inMessages = serverMessage;
+//
+//                    // Append data into GUI textbox
+//                    GUIHandler.updateGUIText();
+//
+//                    System.out.println("\nServer: " + serverMessage);
+//                }
             } catch (Exception e) {
                 System.out.println("Error receiving message: " + e.getMessage());
             }
