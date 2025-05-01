@@ -1,9 +1,10 @@
-package com.example.client_gui;
+package com.example.demo;
 
 import java.io.*;
 import java.net.*;
 import java.security.spec.ECField;
 import java.util.Scanner;
+import javafx.application.Platform;
 
 
 public class client {
@@ -11,13 +12,14 @@ public class client {
     private static String SERVER_ADDRESS = null;
     private static int SERVER_PORT = -1;
     private static String USER_NAME = "Guest";
+    private static GUI comm;
 
     // Sends data back to the server
     public static void send_to_server(PrintWriter server_writer) {//Sends client message to server
         //try {
             //if (data.outMessages.length() > 0) {
         server_writer.println(USER_NAME + ": " + data.outMessages);
-        System.out.println(data.outMessages);
+//        System.out.println(data.outMessages);
             //}
 //        } catch (Exception e) {
 //            //e.printStackTrace();
@@ -30,10 +32,10 @@ public class client {
 
 
     public static void main(String[] args) {
-        // Create a thread that runs and manages the GUI
-        GUI GUICommunication = new GUI();
-        Thread GUIThread = new Thread(GUICommunication);
-        GUIThread.start();
+        // Create a thread that runs the GUI
+        comm = new GUI();
+        Thread thread = new Thread(comm);
+        thread.start();
 
         // Wait and get sever address, server port, and username
         while (PAUSE) {
@@ -84,34 +86,23 @@ public class client {
                 Thread receiveThread = new Thread(new ReceiveMessages(input));
                 receiveThread.start();
 
-                //
-                //GUI GUIHandler = new GUI();
-
-
+                // Send messages to the server
+                String message = null;
                 while (true) {
-                    // Receives messages from the server
-                    data.inMessages = input.readLine();
-                    System.out.println(data.inMessages);
-
                     // Read input from the user
                     if (data.outMessages != null) {
-
-                        // Exit the com.example.client_gui.client if the user types "exit"
-                        if ("exit".equalsIgnoreCase(data.outMessages)) {
-                            break;
-                        }
-
-                        // Send the message to the server
+                        message = data.outMessages;
                         send_to_server(output);
                         data.outMessages = null;
-                        //output.println(USER_NAME + ": " + message);
+                        output.println(USER_NAME + ": " + message);
                     }
-                    if (data.inMessages != null) {
-                        // Append data into GUI textbox
-                        GUICommunication.updateGUIText();
 
-                        System.out.println("\nServer: " + data.inMessages);
+                    // Exit the com.example.client_gui.client if the user types "exit"
+                    if ("exit".equalsIgnoreCase(message)) {
+                        break;
                     }
+
+                    // Send the message to the serv
                 }
 
                 // Close the socket and streams
@@ -120,7 +111,6 @@ public class client {
                 break;  // Break out of the loop if connection is successful and com.example.client_gui.client exits
 
             } catch (IOException e) {
-                e.printStackTrace();
                 System.out.println("Failed to connect to the server. Retrying in 10 seconds...");
                 try {
                     Thread.sleep(10000);  // Wait for 10 seconds before retrying
@@ -132,7 +122,7 @@ public class client {
         }
         // Wait for thread to end
         try {
-            GUIThread.join();
+            thread.join();
             System.out.println("GUI closed.");
         } catch(InterruptedException e) {
             e.printStackTrace();
@@ -141,32 +131,31 @@ public class client {
 
     // Runnable class to handle receiving messages from the server
     static class ReceiveMessages implements Runnable {
-        private BufferedReader input;
+        public BufferedReader input;
+//        public GUI comm;
 
         public ReceiveMessages(BufferedReader input) {
             this.input = input;
+//            this.comm = comm;
         }
 
         @Override
         public void run() {
+
             try {
-//                // create a new GUI object
-//                GUI GUIHandler = new GUI();
-//                String serverMessage;
-//                while ((serverMessage = input.readLine()) != null) {
-//                    // update data file
-//                    data.inMessages = serverMessage;
-//
-//                    // Append data into GUI textbox
-//                    GUIHandler.updateGUIText();
-//
-//                    System.out.println("\nServer: " + serverMessage);
-//                }
+                // create a new GUI object
+                String serverMessage;
+                while ((serverMessage = input.readLine()) != null) {
+
+                    // update data file
+                    System.out.println("comm is" + comm);
+                    comm.updateGUIText();
+
+                    System.out.println("\nServer: " + serverMessage);
+                }
             } catch (Exception e) {
                 System.out.println("Error receiving message: " + e.getMessage());
             }
         }
     }
-
-
 }
