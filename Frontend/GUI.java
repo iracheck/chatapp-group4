@@ -17,10 +17,11 @@ import java.io.IOException;
 public class GUI extends Application implements Runnable {
     protected volatile String message;
     private volatile String[] clientInfo = {"-1", "-1", "-1"};
-    private TextField userTextField;
+    private static TextField userTextField;
     private TextField ipBox;
     private TextField portBox;
-    private TextArea chatBox;
+    private static TextArea chatBox;
+    private VBox usersBox;
 
     // Run the GUI
     @Override
@@ -136,7 +137,7 @@ public class GUI extends Application implements Runnable {
         Label activePeople = new Label("Active People: ");
         activePeople.setStyle("-fx-font-size: 15px; -fx-text-fill: white; -fx-font-family: 'Arial'");
         // also display the active users in a new label here
-        VBox usersBox = new VBox(10, Users, activePeople); // vertical box for people
+        usersBox = new VBox(10, Users, activePeople); // vertical box for people
         usersBox.setPadding(new Insets(35));
         usersBox.setAlignment(Pos.TOP_CENTER);
 
@@ -234,16 +235,35 @@ public class GUI extends Application implements Runnable {
     // Update the text in the GUI remotely
     protected void updateGUIText() {
         try {
-            //System.out.println(2);
-            if (userTextField.getText() != null) {
-                chatBox.appendText(userTextField.getText() + ": " + data.inMessages + "\n");
-                System.out.println(userTextField.getText() + ": " + data.inMessages + "\n");
+            if (data.inMessages != null) {
+                chatBox.appendText(data.inMessages + "\n");
+                System.out.println(data.inMessages + "\n");
 
                 // remove the value from inMessages
                 data.inMessages = null;
             }
         } catch (Exception e) {
-            //e.printStackTrace();
+            e.printStackTrace();
+        }
+    }
+
+    // Add users to the GUI
+    protected void updateGUIUsers() {
+        if (data.newUser != null) {
+            Label user = new Label(data.newUser);
+            usersBox.getChildren().add(user);
+        }
+    }
+
+    // Remove users from the GUI
+    protected void removeGUIUsers() {
+        if (data.removedUser != null) {
+//            for (int child = 0; child != usersBox.getChildren().toArray().length; child++) {
+//                if (usersBox.getChildren()[0] == data.removedUser) {
+//
+//                }
+//            }
+//            usersBox.getChildren().remove();
         }
     }
 
