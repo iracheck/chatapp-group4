@@ -258,12 +258,12 @@ public class GUI extends Application implements Runnable {
     // Remove users from the GUI
     protected void removeGUIUsers() {
         if (data.removedUser != null) {
-//            for (int child = 0; child != usersBox.getChildren().toArray().length; child++) {
-//                if (usersBox.getChildren()[0] == data.removedUser) {
-//
-//                }
-//            }
-//            usersBox.getChildren().remove();
+            for (int child = 0; child != usersBox.getChildren().toArray().length; child++) {
+                if (usersBox.getChildren().get(child) == data.removedUser) {
+
+                }
+            }
+            usersBox.getChildren().remove();
         }
     }
 
