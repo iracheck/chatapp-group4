@@ -111,7 +111,9 @@ int main(int argc, char *argv[]) {
       continue;
       }
 
+   //monitor server socket for new incomming connections.
     if(fds[0].revents & POLLIN){
+     //assign the client connection to a new socket.
       if((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0){
       perror("accept");
         continue;
@@ -121,25 +123,28 @@ int main(int argc, char *argv[]) {
 
     for(int i = 1; i <= MAX_CLIENTS; i++){
       if (fds[i].fd == -1) {
-          fds[i].fd = new_socket;
-          fds[i].events = POLLIN;
+          fds[i].fd = new_socket; // if fds[i].fd is not in use assign new client connection.
+          fds[i].events = POLLIN; // set fds[i].events to monitor for incomming data.
           break;
         }
       }
     }
 
 
+   // reading and sending messages.
     for(int i = 1; i <= MAX_CLIENTS; i++){
-      if(fds[i].fd != -1 && fds[i].revents && POLLIN){
+      if(fds[i].fd != -1 && fds[i].revents && POLLIN){ //loop though all fds except for server fd. if a new event occours (data recieved) enter if statment.
         memset(buffer, 0, BUFFER_SIZE);
-        valread = read(fds[i].fd, buffer, BUFFER_SIZE);
+        valread = read(fds[i].fd, buffer, BUFFER_SIZE); // read the incoming data from the client fd
 
+       //handle client disconnection
         if(valread <= 0){
           log_disconnection("Client disconnected.", verbose);
           close(fds[i].fd);
           fds[i].fd = -1;
         } else {
             write_log(buffer, verbose);
+          // send incoming messages to all other clients.
             for (int j = 1; j <= MAX_CLIENTS; j++) {
               if (fds[j].fd != -1 && j != i) {
                 send(fds[j].fd, buffer, valread, 0);
