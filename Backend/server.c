@@ -107,7 +107,7 @@ void handle_signals(int sig) {
 }
 
 void add_username(char* username) {
-  if (strlen(usernames) > 0) {
+  if (strlen(usernames) >= 0) {
     strcat(usernames, USERNAME_SEP);
   }
   strncat(usernames, username, MAX_USERNAME_LEN);
