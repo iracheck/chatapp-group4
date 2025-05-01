@@ -30,10 +30,10 @@ public class client {
 
 
     public static void main(String[] args) {
-        // Create a thread that runs the GUI
-        GUI comm = new GUI();
-        Thread thread = new Thread(comm);
-        thread.start();
+        // Create a thread that runs and manages the GUI
+        GUI GUICommunication = new GUI();
+        Thread GUIThread = new Thread(GUICommunication);
+        GUIThread.start();
 
         // Wait and get sever address, server port, and username
         while (PAUSE) {
@@ -85,11 +85,14 @@ public class client {
                 receiveThread.start();
 
                 //
-                GUI GUIHandler = new GUI();
-                data.inMessages = input.readLine();
-                System.out.println(data.inMessages);
+                //GUI GUIHandler = new GUI();
+
 
                 while (true) {
+                    // Receives messages from the server
+                    data.inMessages = input.readLine();
+                    System.out.println(data.inMessages);
+
                     // Read input from the user
                     if (data.outMessages != null) {
 
@@ -105,7 +108,7 @@ public class client {
                     }
                     if (data.inMessages != null) {
                         // Append data into GUI textbox
-                        GUIHandler.updateGUIText();
+                        GUICommunication.updateGUIText();
 
                         System.out.println("\nServer: " + data.inMessages);
                     }
@@ -129,7 +132,7 @@ public class client {
         }
         // Wait for thread to end
         try {
-            thread.join();
+            GUIThread.join();
             System.out.println("GUI closed.");
         } catch(InterruptedException e) {
             e.printStackTrace();
