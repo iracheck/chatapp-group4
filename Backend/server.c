@@ -22,6 +22,8 @@
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
+#define MAX_USERNAME_LEN 100
+#define USERNAME_SEP ","
 
 // GLOBALLY USED VARIABLES
 
@@ -31,6 +33,7 @@ int server_fd;
 // Server shutdown methods and helpers
 volatile bool online = true;
 int users_online;
+char usernames[MAX_CLIENTS * (MAX_USERNAME_LEN + 1)] = "";
 
 
 // Safely modify the connected users-- no longer necessary, but safe :)
@@ -101,6 +104,13 @@ int start_shutdown_handler(int serverSocket, int verbose) {
 void handle_signals(int sig) {
     write_log("Force shutdown detected. Gracefully shutting down server...", 1);
     trigger_shutdown(1);
+}
+
+void add_username(char* username) {
+  if (strlen(usernames) > 0) {
+    strcat(usernames, USERNAME_SEP);
+  }
+  strncat(usernames, username, MAX_USERNAME_LEN);
 }
 
 int main(int argc, char *argv[]) {
@@ -231,11 +241,23 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     write_log(buffer, verbose);
+                    if (buffer[0] == '+') {
+                      char new_name[MAX_USERNAME_LEN + 1];
+                      strncpy(new_name, buffer + 1, MAX_USERNAME_LEN);
+                      add_username(new_name);
+                      write_logf(verbose, "Added username: %s Current Usernames: %s", new_name, usernames);
+                      for (int j = 1; j <= MAX_CLIENTS; j++) {
+                        if (fds[j].fd != -1) {
+                          send(fds[j].fd, usernames, valread, 0);
+                        }
+                      } 
+                    } else {
 		    for (int j = 1; j <= MAX_CLIENTS; j++) { // Send incoming data to each client
                       if (fds[j].fd != -1) {
                         send(fds[j].fd, buffer, valread, 0);
                       }
                     }
+                  }
                 }
             }
         }
