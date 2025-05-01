@@ -272,6 +272,9 @@ public class GUI extends Application implements Runnable {
         if (data.users != null) {
             // Initializes the label and creates an array of strings
             String[] names = data.users.substring(1).split("\\,");
+            for (int i = 0; i != names.length; i++) {
+                names[i] = names[i].substring(data.users.length() - 1);
+            }
 
             // Clears existing users
             usersBox.getChildren().clear();
@@ -281,13 +284,13 @@ public class GUI extends Application implements Runnable {
             Users.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Arial'");
             Label activePeople = new Label("Active People: ");
             activePeople.setStyle("-fx-font-size: 15px; -fx-text-fill: white; -fx-font-family: 'Arial'");
-            usersBox.getChildren().addAll(Users, activePeople); //hi
+            usersBox.getChildren().addAll(Users, activePeople);
 
             // Loads names into GUI (with css formatting)
             for (String givenName : names) {
                 Label name = new Label(givenName);
                 name.setStyle("-fx-font-size: 12px; -fx-text-fill: white; -fx-font-family: 'Arial'");
-                usersBox.getChildren().add(name); //hi
+                usersBox.getChildren().add(name);
             }
 
             // Set the users back to null to avoid confusion

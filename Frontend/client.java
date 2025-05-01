@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.client_gui;
 
 import java.io.*;
 import java.net.*;
@@ -17,10 +17,10 @@ public class client {
     // Sends data back to the server
     public static void send_to_server(PrintWriter server_writer) {//Sends client message to server
         //try {
-            //if (data.outMessages.length() > 0) {
+        //if (data.outMessages.length() > 0) {
         server_writer.println(USER_NAME + ": " + data.outMessages);
 //        System.out.println(data.outMessages);
-            //}
+        //}
 //        } catch (Exception e) {
 //            //e.printStackTrace();
 //        }
@@ -31,11 +31,11 @@ public class client {
     }
 
     public static void signal_disconnect(PrintWriter server_writer) {
-        server_writer.println("-"+USER_NAME);
+        server_writer.println("-" + USER_NAME);
     }
 
     public static void signal_connect(PrintWriter server_writer) {
-        server_writer.println("+"+USER_NAME);
+        server_writer.println("+" + USER_NAME);
     }
 
 
@@ -54,16 +54,12 @@ public class client {
                 SERVER_PORT = Integer.parseInt(data.CLIENT_INFO[2]);
             } else {
                 try {
-                Thread.sleep(1000);
+                    Thread.sleep(1000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
-
-
-
-
 
 
 //        if (args.length < 2 || args.length >= 3) {
@@ -135,7 +131,7 @@ public class client {
         try {
             thread.join();
             System.out.println("GUI closed.");
-        } catch(InterruptedException e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
