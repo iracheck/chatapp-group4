@@ -247,23 +247,51 @@ public class GUI extends Application implements Runnable {
         }
     }
 
-    // Add users to the GUI
+//    // Add users to the GUI
+//    protected void updateGUIUsers() {
+//        if (data.newUser != null) {
+//            Label user = new Label(data.newUser);
+//            usersBox.getChildren().add(user);
+//        }
+//    }
+//
+//    // Remove users from the GUI
+//    protected void removeGUIUsers() {
+//        if (data.removedUser != null) {
+//            for (int child = 0; child != usersBox.getChildren().toArray().length; child++) {
+//                if (usersBox.getChildren().get(child) == data.removedUser) {
+//
+//                }
+//            }
+//            usersBox.getChildren().remove();
+//        }
+//    }
+
+    // Updates the users in the GUI
     protected void updateGUIUsers() {
-        if (data.newUser != null) {
-            Label user = new Label(data.newUser);
-            usersBox.getChildren().add(user);
-        }
-    }
+        if (data.users != null) {
+            // Initializes the label and creates an array of strings
+            String[] names = data.users.substring(1).split("\\,");
 
-    // Remove users from the GUI
-    protected void removeGUIUsers() {
-        if (data.removedUser != null) {
-            for (int child = 0; child != usersBox.getChildren().toArray().length; child++) {
-                if (usersBox.getChildren().get(child) == data.removedUser) {
+            // Clears existing users
+            usersBox.getChildren().clear();
 
-                }
+            // Add in headers
+            Label Users = new Label("Users");
+            Users.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Arial'");
+            Label activePeople = new Label("Active People: ");
+            activePeople.setStyle("-fx-font-size: 15px; -fx-text-fill: white; -fx-font-family: 'Arial'");
+            usersBox.getChildren().addAll(Users, activePeople); //hi
+
+            // Loads names into GUI (with css formatting)
+            for (String givenName : names) {
+                Label name = new Label(givenName);
+                name.setStyle("-fx-font-size: 12px; -fx-text-fill: white; -fx-font-family: 'Arial'");
+                usersBox.getChildren().add(name); //hi
             }
-            usersBox.getChildren().remove();
+
+            // Set the users back to null to avoid confusion
+            data.users = null;
         }
     }
 
