@@ -113,6 +113,22 @@ void add_username(char* username) {
   strncat(usernames, username, MAX_USERNAME_LEN);
 }
 
+void remove_username(char* username) {
+  char temp_usernames[MAX_CLIENTS * (MAX_USERNAME_LEN + strlen(USERNAME_SEP) + 1)];
+  char *tok;
+  char *rest = usernames;
+
+  while ((tok = strtok_r(rest, USERNAME_SEP, &rest))) {
+    if (strcmp(tok, username) != 0) {
+      if (strlen(temp_usernames) > 0) {
+        strcat(temp_usernames, USERNAME_SEP);
+      }
+    strcat(temp_usernames, tok);
+    }
+  }
+  strcpy(usernames, temp_usernames);
+}
+
 int main(int argc, char *argv[]) {
     char* ip_address;
     int port;
@@ -248,10 +264,26 @@ int main(int argc, char *argv[]) {
                       write_logf(verbose, "Added username: %s Current Usernames: %s", new_name, usernames);
                       for (int j = 1; j <= MAX_CLIENTS; j++) {
                         if (fds[j].fd != -1) {
-                          send(fds[j].fd, usernames, valread, 0);
+                          send(fds[j].fd, usernames, strlen(usernames), 0);
                         }
-                      } 
-                    } else {
+                      }
+                    }
+                    else if (buffer[0] == '_') {
+                      char name[MAX_USERNAME_LEN + 1];
+                      strncpy(name, buffer + 1, sizeof(name)-1);
+                      remove_username(name);
+                      memmove(&usernames[0]+1, &usernames[0], (sizeof(usernames) +1) * sizeof(char) );
+                      usernames[0] = '$';
+                      write_logf(verbose, "Removed username: %s Current Usernames: %s", name, usernames);
+                      for (int j = 1; j <= MAX_CLIENTS; j++) {
+                        if (fds[j].fd != -1) {
+                          send(fds[j].fd, usernames, strlen(usernames), 0);
+                        }
+                      }
+                      usernames[0] = "";
+                    }
+
+                    else {
 		    for (int j = 1; j <= MAX_CLIENTS; j++) { // Send incoming data to each client
                       if (fds[j].fd != -1) {
                         send(fds[j].fd, buffer, valread, 0);
