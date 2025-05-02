@@ -7,4 +7,5 @@ public class data {
     static volatile String removedUser;
     static volatile String inMessages;
     static volatile String outMessages;
+    static volatile String users;
 }
