@@ -18,9 +18,12 @@
 #include <signal.h>
 
 #include "logging.c"
+#include "get_ip.c"
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024
+#define MAX_USERNAME_LEN 100
+#define USERNAME_SEP ","
 
 // GLOBALLY USED VARIABLES
 
@@ -30,6 +33,7 @@ int server_fd;
 // Server shutdown methods and helpers
 volatile bool online = true;
 int users_online;
+char usernames[MAX_CLIENTS * (MAX_USERNAME_LEN + 1)] = "";
 
 
 // Safely modify the connected users-- no longer necessary, but safe :)
@@ -102,6 +106,29 @@ void handle_signals(int sig) {
     trigger_shutdown(1);
 }
 
+void add_username(char* username) {
+  if (strlen(usernames) >= 0) {
+    strcat(usernames, USERNAME_SEP);
+  }
+  strncat(usernames, username, MAX_USERNAME_LEN);
+}
+
+void remove_username(char* username) {
+  char temp_usernames[MAX_CLIENTS * (MAX_USERNAME_LEN + strlen(USERNAME_SEP) + 1)];
+  char *tok;
+  char *rest = usernames;
+
+  while ((tok = strtok_r(rest, USERNAME_SEP, &rest))) {
+    if (strcmp(tok, username) != 0) {
+      if (strlen(temp_usernames) > 0) {
+        strcat(temp_usernames, USERNAME_SEP);
+      }
+    strcat(temp_usernames, tok);
+    }
+  }
+  strcpy(usernames, temp_usernames);
+}
+
 int main(int argc, char *argv[]) {
     char* ip_address;
     int port;
@@ -115,7 +142,7 @@ int main(int argc, char *argv[]) {
     char buffer[BUFFER_SIZE];
 
     if (argc <= 1) {
-        ip_address = "127.0.0.1";
+        ip_address = get_ip_address();
         port = 8080;
         verbose = 1;
     }
@@ -136,7 +163,7 @@ int main(int argc, char *argv[]) {
     }
 
     write_logf(verbose, "Starting Server");
-
+    printf("%s\n", ip_address);
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) { //Create server socket
         perror("socket failed");
         exit(EXIT_FAILURE);
@@ -230,11 +257,39 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     write_log(buffer, verbose);
+                    if (buffer[0] == '+') {
+                      char new_name[MAX_USERNAME_LEN + 1];
+                      strncpy(new_name, buffer + 1, MAX_USERNAME_LEN);
+                      add_username(new_name);
+                      write_logf(verbose, "Added username: %s Current Usernames: %s", new_name, usernames);
+                      for (int j = 1; j <= MAX_CLIENTS; j++) {
+                        if (fds[j].fd != -1) {
+                          send(fds[j].fd, usernames, strlen(usernames), 0);
+                        }
+                      }
+                    }
+                    else if (buffer[0] == '_') {
+                      char name[MAX_USERNAME_LEN + 1];
+                      strncpy(name, buffer + 1, sizeof(name)-1);
+                      remove_username(name);
+                      memmove(&usernames[0]+1, &usernames[0], (sizeof(usernames) +1) * sizeof(char) );
+                      usernames[0] = '$';
+                      write_logf(verbose, "Removed username: %s Current Usernames: %s", name, usernames);
+                      for (int j = 1; j <= MAX_CLIENTS; j++) {
+                        if (fds[j].fd != -1) {
+                          send(fds[j].fd, usernames, strlen(usernames), 0);
+                        }
+                      }
+                      usernames[0] = "";
+                    }
+
+                    else {
 		    for (int j = 1; j <= MAX_CLIENTS; j++) { // Send incoming data to each client
                       if (fds[j].fd != -1) {
                         send(fds[j].fd, buffer, valread, 0);
                       }
                     }
+                  }
                 }
             }
         }
