@@ -1,6 +1,7 @@
-package com.example.client_gui;
+package com.example.demo;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.*;
 import java.security.spec.ECField;
 import java.util.Scanner;
@@ -13,14 +14,15 @@ public class client {
     private static int SERVER_PORT = -1;
     private static String USER_NAME = "Guest";
     private static GUI comm;
+    private static String prev_msg = "";
 
     // Sends data back to the server
     public static void send_to_server(PrintWriter server_writer) {//Sends client message to server
         //try {
-        //if (data.outMessages.length() > 0) {
+            //if (data.outMessages.length() > 0) {
         server_writer.println(USER_NAME + ": " + data.outMessages);
 //        System.out.println(data.outMessages);
-        //}
+            //}
 //        } catch (Exception e) {
 //            //e.printStackTrace();
 //        }
@@ -31,11 +33,17 @@ public class client {
     }
 
     public static void signal_disconnect(PrintWriter server_writer) {
-        server_writer.println("-" + USER_NAME);
+        server_writer.println("_"+USER_NAME);
     }
 
     public static void signal_connect(PrintWriter server_writer) {
-        server_writer.println("+" + USER_NAME);
+        server_writer.println("+"+USER_NAME);
+    }
+
+    public static String removeUnknownCharacters(String input) {
+        // Use a regular expression to replace any character that is not
+        // a letter (a-z, A-Z), a digit (0-9), or a whitespace character with an empty string.
+        return input.replaceAll("[^a-zA-Z0-9,+_$:\\s]", "");
     }
 
 
@@ -54,12 +62,16 @@ public class client {
                 SERVER_PORT = Integer.parseInt(data.CLIENT_INFO[2]);
             } else {
                 try {
-                    Thread.sleep(1000);
+                Thread.sleep(1000);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+
+
+
+
 
 
 //        if (args.length < 2 || args.length >= 3) {
@@ -96,6 +108,11 @@ public class client {
                 signal_connect(output);
 
                 while (true) {
+
+                    if (comm.get_left()){
+                        signal_disconnect(output);
+                        break;
+                    }
                     // Read input from the user
                     if (data.outMessages != null) {
                         message = data.outMessages;
@@ -131,7 +148,7 @@ public class client {
         try {
             thread.join();
             System.out.println("GUI closed.");
-        } catch (InterruptedException e) {
+        } catch(InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -154,10 +171,28 @@ public class client {
                 String serverMessage;
                 while ((serverMessage = input.readLine()) != null) {
 
+                    serverMessage = removeUnknownCharacters(serverMessage);
                     data.inMessages = serverMessage;
 
+                    if (data.inMessages.charAt(0) == ',') {
+
+                        data.users += data.inMessages;
+                        comm.updateGUIUsers();
+                    }
+                    else if (data.inMessages.charAt(0) == '$') {
+                        data.users = data.inMessages.substring(1);
+                        comm.updateGUIUsers();
+                    }
+                    else {
+
+                        if (!data.inMessages.equals(prev_msg)) {
+                            comm.updateGUIText();
+                            prev_msg = data.inMessages;
+
+                        }
+                    }
+
                     // update data file
-                    comm.updateGUIText();
 
                     System.out.println("\nServer: " + serverMessage);
                 }
